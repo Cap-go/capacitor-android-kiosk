@@ -1,6 +1,15 @@
-# @capgo/capacitor-android-kiosk
+# capacitor-android-kiosk
+  <a href="https://capgo.app/"><img src='https://raw.githubusercontent.com/Cap-go/capgo/main/assets/capgo_banner.png' alt='Capgo - Instant updates for capacitor'/></a>
 
+<div align="center">
+  <h2><a href="https://capgo.app/?ref=plugin_android_kiosk"> ➡️ Get Instant updates for your App with Capgo</a></h2>
+  <h2><a href="https://capgo.app/consulting/?ref=plugin_android_kiosk"> Missing a feature? We'll build the plugin for you 💪</a></h2>
+</div>
 Android Kiosk Mode plugin for Capacitor - Lock device into kiosk mode with launcher functionality
+
+## Documentation
+
+The most complete doc is available here: https://capgo.app/docs/plugins/android-kiosk/
 
 ## Install
 
