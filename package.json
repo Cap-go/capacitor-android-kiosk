@@ -9,6 +9,8 @@
   "files": [
     "android/src/main/",
     "android/build.gradle",
+    "ios/Sources/",
+    "ios/Tests/",
     "dist/"
   ],
   "author": "Martin Donadieu <martin@capgo.app>",
@@ -32,8 +34,9 @@
     "device-management"
   ],
   "scripts": {
-    "verify": "npm run verify:android && npm run verify:web",
+    "verify": "npm run verify:android && npm run verify:ios && npm run verify:web",
     "verify:android": "cd android && ./gradlew clean build test && cd ..",
+    "verify:ios": "cd ios && swift build && cd ..",
     "verify:web": "npm run build",
     "lint": "npm run eslint && npm run prettier -- --check",
     "fmt": "npm run eslint -- --fix && npm run prettier -- --write",
@@ -72,6 +75,9 @@
   "capacitor": {
     "android": {
       "src": "android"
+    },
+    "ios": {
+      "src": "ios"
     }
   }
 }
