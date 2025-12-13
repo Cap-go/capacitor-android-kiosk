@@ -6,6 +6,7 @@
   <h2><a href="https://capgo.app/consulting/?ref=plugin_android_kiosk"> Missing a feature? We'll build the plugin for you 💪</a></h2>
 </div>
 Android Kiosk Mode plugin for Capacitor - Lock device into kiosk mode with launcher functionality
+Compatible with Capacitor 8/7
 
 ## Documentation
 
