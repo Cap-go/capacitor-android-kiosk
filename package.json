@@ -34,9 +34,9 @@
     "device-management"
   ],
   "scripts": {
-    "verify": "npm run verify:android && npm run verify:ios && npm run verify:web",
+    "verify": "npm run verify:ios && npm run verify:android && npm run verify:web",
+    "verify:ios": "xcodebuild -scheme CapgoCapacitorAndroidKiosk -destination generic/platform=iOS",
     "verify:android": "cd android && ./gradlew clean build test && cd ..",
-    "verify:ios": "cd ios && swift build && cd ..",
     "verify:web": "npm run build",
     "lint": "npm run eslint && npm run prettier -- --check",
     "fmt": "npm run eslint -- --fix && npm run prettier -- --write",
