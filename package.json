@@ -1,6 +1,6 @@
 {
   "name": "@capgo/capacitor-android-kiosk",
-  "version": "8.0.0",
+  "version": "8.1.0",
   "description": "Android Kiosk Mode plugin for Capacitor - Lock device into kiosk mode with launcher functionality",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
