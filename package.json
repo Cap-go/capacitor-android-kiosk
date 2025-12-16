@@ -22,6 +22,7 @@
   "bugs": {
     "url": "https://github.com/Cap-go/capacitor-android-kiosk/issues"
   },
+  "homepage": "https://capgo.app/docs/plugins/android-kiosk/",
   "keywords": [
     "capacitor",
     "plugin",
