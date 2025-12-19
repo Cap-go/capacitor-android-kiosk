@@ -42,7 +42,7 @@
     "lint": "npm run eslint && npm run prettier -- --check",
     "fmt": "npm run eslint -- --fix && npm run prettier -- --write",
     "eslint": "eslint .",
-    "prettier": "prettylint \"**/*.{css,html,ts,js,java}\" --plugin=prettier-plugin-java",
+    "prettier": "node ../prettier-pretty-check/index.js \"**/*.{css,html,ts,js,java}\" --plugin=prettier-plugin-java",
     "docgen": "docgen --api CapacitorAndroidKioskPlugin --output-readme README.md --output-json dist/docs.json",
     "build": "npm run clean && npm run docgen && tsc && rollup -c rollup.config.mjs",
     "clean": "rimraf ./dist",
@@ -64,8 +64,7 @@
     "prettier-plugin-java": "^2.7.7",
     "rimraf": "^6.1.0",
     "rollup": "^4.53.2",
-    "typescript": "^5.9.3",
-    "prettylint": "^2.0.0"
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "@capacitor/core": ">=8.0.0"
