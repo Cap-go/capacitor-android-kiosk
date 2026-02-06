@@ -9,8 +9,6 @@
   "files": [
     "android/src/main/",
     "android/build.gradle",
-    "ios/Sources/",
-    "ios/Tests/",
     "dist/"
   ],
   "author": "Martin Donadieu <martin@capgo.app>",
@@ -35,8 +33,7 @@
     "device-management"
   ],
   "scripts": {
-    "verify": "npm run verify:ios && npm run verify:android && npm run verify:web",
-    "verify:ios": "xcodebuild -scheme CapgoCapacitorAndroidKiosk -destination generic/platform=iOS",
+    "verify": "npm run verify:android && npm run verify:web",
     "verify:android": "cd android && ./gradlew clean build test && cd ..",
     "verify:web": "npm run build",
     "lint": "npm run eslint && npm run prettier -- --check",
@@ -77,9 +74,6 @@
   "capacitor": {
     "android": {
       "src": "android"
-    },
-    "ios": {
-      "src": "ios"
     }
   }
 }
