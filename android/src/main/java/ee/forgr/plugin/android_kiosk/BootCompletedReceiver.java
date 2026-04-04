@@ -92,18 +92,11 @@ public class BootCompletedReceiver extends BroadcastReceiver {
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             if (alarmManager == null) return;
 
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                flags |= PendingIntent.FLAG_IMMUTABLE;
-            }
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
             PendingIntent pending = PendingIntent.getActivity(context.getApplicationContext(), ALARM_REQUEST_CODE, launchIntent, flags);
 
             long triggerAt = SystemClock.elapsedRealtime() + ALARM_DELAY_MS;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pending);
-            } else {
-                alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pending);
-            }
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pending);
         } catch (Exception e) {
             Log.e(TAG, "Failed to schedule alarm: " + e.getMessage(), e);
         }
@@ -121,10 +114,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
             if (launchIntent == null) return;
             KioskLaunchIntents.addWatchdogLaunchFlags(launchIntent);
 
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                flags |= PendingIntent.FLAG_IMMUTABLE;
-            }
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
             PendingIntent pending = PendingIntent.getActivity(context.getApplicationContext(), ALARM_REQUEST_CODE, launchIntent, flags);
 
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
