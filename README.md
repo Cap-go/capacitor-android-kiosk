@@ -37,6 +37,8 @@ This plugin is **Android-only**. For iOS kiosk mode functionality, please use th
 ## Features
 
 - **Kiosk Mode**: Hide system UI and enter immersive fullscreen mode
+- **Keep-alive**: Foreground service while in kiosk; stopped when you call `exitKioskMode()`.
+- **Session options**: `restoreAfterReboot` tries to opens the app again after reboot; `relaunch` + `relaunchIntervalMinutes` tries to bring the UI forward on a timer.
 - **Launcher Integration**: Set your app as the device launcher/home app
 - **Hardware Key Control**: Block or allow specific hardware buttons
 - **Status Detection**: Check if kiosk mode is active or if app is set as launcher
@@ -49,7 +51,7 @@ This plugin is **Android-only**. For iOS kiosk mode functionality, please use th
 ```typescript
 import { CapacitorAndroidKiosk } from '@capgo/capacitor-android-kiosk';
 
-// Enter kiosk mode
+// Enter kiosk mode (with optional: restoreAfterReboot, relaunch, relaunchIntervalMinutes)
 await CapacitorAndroidKiosk.enterKioskMode();
 
 // Exit kiosk mode
@@ -130,7 +132,7 @@ async function setupKioskMode() {
 
 * [`isInKioskMode()`](#isinkioskmode)
 * [`isSetAsLauncher()`](#issetaslauncher)
-* [`enterKioskMode()`](#enterkioskmode)
+* [`enterKioskMode(...)`](#enterkioskmode)
 * [`exitKioskMode()`](#exitkioskmode)
 * [`setAsLauncher()`](#setaslauncher)
 * [`setAllowedKeys(...)`](#setallowedkeys)
@@ -175,14 +177,19 @@ Checks if the app is set as the device launcher (home app).
 --------------------
 
 
-### enterKioskMode()
+### enterKioskMode(...)
 
 ```typescript
-enterKioskMode() => Promise<void>
+enterKioskMode(options?: EnterKioskModeOptions | undefined) => Promise<void>
 ```
 
 Enters kiosk mode, hiding system UI and blocking hardware buttons.
+Also starts a foreground keep-alive service so the app is less likely to be killed by the system.
 The app must be set as the device launcher for this to work effectively.
+
+| Param         | Type                                                                    | Description                                                                                                      |
+| ------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **`options`** | <code><a href="#enterkioskmodeoptions">EnterKioskModeOptions</a></code> | Optional. Omit `restoreAfterReboot` or `relaunch` to keep their saved values; pass them when you want to change. |
 
 **Since:** 1.0.0
 
@@ -196,6 +203,7 @@ exitKioskMode() => Promise<void>
 ```
 
 Exits kiosk mode, restoring normal system UI and hardware button functionality.
+Also stops the foreground keep-alive service started in enterKioskMode().
 
 **Since:** 1.0.0
 
@@ -250,6 +258,17 @@ Get the native Capacitor plugin version.
 
 
 ### Interfaces
+
+
+#### EnterKioskModeOptions
+
+Optional flags for `enterKioskMode`.
+
+| Prop                          | Type                 | Description                                                                                                                                                                                                                                                                           |
+| ----------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`restoreAfterReboot`**      | <code>boolean</code> | After reboot, start the app so you can call `enterKioskMode()` again. Best-effort only (OEM behavior, force-stop). Omit to keep the saved value. Cleared when you call `exitKioskMode()`.                                                                                             |
+| **`relaunch`**                | <code>boolean</code> | Periodically tries to bring the app to the foreground. Skipped while the screen is off. Often blocked from the background on some devices—being the default launcher, relaxing battery limits, and allowing exact alarms (where required) improve odds. Omit to keep the saved value. |
+| **`relaunchIntervalMinutes`** | <code>number</code>  | Minutes between relaunch attempts when `relaunch` is on. Range 5–60; default 15.                                                                                                                                                                                                      |
 
 
 #### AllowedKeysOptions

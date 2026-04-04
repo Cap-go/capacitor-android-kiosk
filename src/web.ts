@@ -1,6 +1,6 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type { AllowedKeysOptions, CapacitorAndroidKioskPlugin } from './definitions';
+import type { AllowedKeysOptions, CapacitorAndroidKioskPlugin, EnterKioskModeOptions } from './definitions';
 
 export class CapacitorAndroidKioskWeb extends WebPlugin implements CapacitorAndroidKioskPlugin {
   async isInKioskMode(): Promise<{ isInKioskMode: boolean }> {
@@ -13,7 +13,8 @@ export class CapacitorAndroidKioskWeb extends WebPlugin implements CapacitorAndr
     return { isLauncher: false };
   }
 
-  async enterKioskMode(): Promise<void> {
+  async enterKioskMode(options?: EnterKioskModeOptions): Promise<void> {
+    void options;
     console.warn('Kiosk mode is not supported on web platform');
   }
 
@@ -25,7 +26,8 @@ export class CapacitorAndroidKioskWeb extends WebPlugin implements CapacitorAndr
     console.warn('Launcher functionality is not supported on web platform');
   }
 
-  async setAllowedKeys(_options: AllowedKeysOptions): Promise<void> {
+  async setAllowedKeys(options: AllowedKeysOptions): Promise<void> {
+    void options;
     console.warn('Hardware key control is not supported on web platform');
   }
 

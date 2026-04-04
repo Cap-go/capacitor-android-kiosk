@@ -5,6 +5,7 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.view.KeyEvent;
@@ -55,6 +56,14 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
                 return;
             }
 
+            JSObject options = call.getData();
+            final boolean hasRestoreAfterRebootOption = options != null && options.has("restoreAfterReboot");
+            final boolean hasRelaunchOption = options != null && options.has("relaunch");
+            final boolean relaunchEnabled = Boolean.TRUE.equals(call.getBoolean("relaunch", false));
+            Integer intervalMinBoxed = call.getInt("relaunchIntervalMinutes", 15);
+            final int relaunchIntervalMinutes = intervalMinBoxed != null ? intervalMinBoxed : 15;
+            final long relaunchIntervalMs = KioskWatchdogScheduler.clampIntervalMs(relaunchIntervalMinutes * 60_000L);
+
             activity.runOnUiThread(() -> {
                 try {
                     View decorView = activity.getWindow().getDecorView();
@@ -87,6 +96,22 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
                     activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
                     isInKioskMode = true;
+                    if (hasRestoreAfterRebootOption) {
+                        setPersistedRestoreAfterReboot(Boolean.TRUE.equals(call.getBoolean("restoreAfterReboot", false)));
+                    }
+
+                    Context ctx = activity.getApplicationContext();
+                    if (hasRelaunchOption) {
+                        if (relaunchEnabled) {
+                            KioskWatchdogScheduler.enable(ctx, relaunchIntervalMs);
+                        } else {
+                            KioskWatchdogScheduler.disable(ctx);
+                        }
+                    }
+
+                    setKioskSessionActive(true);
+                    startKeepAliveService();
+
                     call.resolve();
                 } catch (Exception e) {
                     call.reject("Failed to enter kiosk mode", e);
@@ -108,6 +133,8 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
 
             activity.runOnUiThread(() -> {
                 try {
+                    stopKeepAliveService();
+
                     View decorView = activity.getWindow().getDecorView();
 
                     // Restore system UI for different Android versions
@@ -130,6 +157,9 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
                     activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
                     isInKioskMode = false;
+                    setPersistedRestoreAfterReboot(false);
+                    setKioskSessionActive(false);
+                    KioskWatchdogScheduler.disable(activity.getApplicationContext());
                     call.resolve();
                 } catch (Exception e) {
                     call.reject("Failed to exit kiosk mode", e);
@@ -143,25 +173,28 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
     @PluginMethod
     public void setAsLauncher(PluginCall call) {
         try {
-            Context context = getContext();
-            if (context == null) {
-                call.reject("Context not available");
+            Activity activity = getActivity();
+            if (activity == null) {
+                call.reject("Activity not available");
                 return;
             }
+            Context context = activity.getApplicationContext();
 
             // Enable launcher intent filter
-            ComponentName componentName = new ComponentName(context, getLauncherActivity());
-            PackageManager packageManager = context.getPackageManager();
-            packageManager.setComponentEnabledSetting(
-                componentName,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP
-            );
+            Class<?> launcherActivity = getLauncherActivity();
+            if (launcherActivity != null) {
+                ComponentName componentName = new ComponentName(context, launcherActivity);
+                PackageManager packageManager = context.getPackageManager();
+                packageManager.setComponentEnabledSetting(
+                    componentName,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                );
+            }
 
-            // Open home screen settings
+            // Open home screen settings (must start from Activity so settings appear in foreground)
             Intent intent = new Intent(android.provider.Settings.ACTION_HOME_SETTINGS);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
+            activity.startActivity(intent);
 
             call.resolve();
         } catch (Exception e) {
@@ -218,15 +251,28 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
      * This method should be called from the main activity's dispatchKeyEvent
      */
     @Override
+    protected void handleOnResume() {
+        super.handleOnResume();
+        Context context = getContext();
+        if (context != null) {
+            KioskWatchdogScheduler.rescheduleIfEnabled(context);
+        }
+    }
+
+    @Override
     protected void handleOnPause() {
         super.handleOnPause();
         if (isInKioskMode) {
             Activity activity = getActivity();
             if (activity != null) {
-                // Bring app back to foreground if in kiosk mode
-                ActivityManager activityManager = (ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE);
-                if (activityManager != null) {
-                    activityManager.moveTaskToFront(activity.getTaskId(), 0);
+                try {
+                    // Bring app back to foreground if in kiosk mode (requires REORDER_TASKS)
+                    ActivityManager activityManager = (ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE);
+                    if (activityManager != null) {
+                        activityManager.moveTaskToFront(activity.getTaskId(), 0);
+                    }
+                } catch (SecurityException e) {
+                    android.util.Log.w("CapacitorAndroidKiosk", "Cannot bring task to front (REORDER_TASKS denied): " + e.getMessage());
                 }
             }
         }
@@ -279,5 +325,63 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
             return false;
         }
         return !allowedKeys.contains(keyCode);
+    }
+
+    /**
+     * Start the keep-alive foreground service to reduce the chance of the app being killed by the system.
+     * Calling start again while the service is running delivers {@code onStartCommand} so in-service
+     * relaunch scheduling stays in sync with watchdog prefs.
+     */
+    private void startKeepAliveService() {
+        try {
+            Context context = getContext();
+            if (context == null) return;
+
+            Intent serviceIntent = new Intent(context, KeepAliveService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent);
+            } else {
+                context.startService(serviceIntent);
+            }
+        } catch (SecurityException e) {
+            android.util.Log.w("CapacitorAndroidKiosk", "Permission denied starting keep-alive service: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            android.util.Log.w("CapacitorAndroidKiosk", "Cannot start keep-alive service: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Stop the keep-alive foreground service.
+     */
+    private void stopKeepAliveService() {
+        try {
+            Context context = getContext();
+            if (context == null) return;
+
+            Intent serviceIntent = new Intent(context, KeepAliveService.class);
+            context.stopService(serviceIntent);
+        } catch (Exception e) {
+            android.util.Log.w("CapacitorAndroidKiosk", "Error stopping keep-alive service: " + e.getMessage());
+        }
+    }
+
+    private SharedPreferences getKioskPrefs() {
+        Context context = getContext();
+        if (context == null) return null;
+        return context.getSharedPreferences(KioskPrefs.PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    private void setPersistedRestoreAfterReboot(boolean restore) {
+        SharedPreferences prefs = getKioskPrefs();
+        if (prefs != null) {
+            prefs.edit().putBoolean(KioskPrefs.KEY_RESTORE_AFTER_REBOOT, restore).apply();
+        }
+    }
+
+    private void setKioskSessionActive(boolean active) {
+        SharedPreferences prefs = getKioskPrefs();
+        if (prefs != null) {
+            prefs.edit().putBoolean(KioskPrefs.KEY_KIOSK_SESSION_ACTIVE, active).apply();
+        }
     }
 }
