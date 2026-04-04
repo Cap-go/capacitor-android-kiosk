@@ -63,8 +63,15 @@ public class BootCompletedReceiver extends BroadcastReceiver {
             new Handler(Looper.getMainLooper()).postDelayed(
                 () -> {
                     try {
+                        Context appCtx = context.getApplicationContext();
+                        SharedPreferences delayedPrefs = appCtx.getSharedPreferences(KioskPrefs.PREFS_NAME, Context.MODE_PRIVATE);
+                        if (!KioskPrefs.shouldRestoreAfterBoot(delayedPrefs)) {
+                            return;
+                        }
+                        if (!delayedPrefs.getBoolean(KioskPrefs.KEY_BOOT_RESTORE_PENDING, false)) {
+                            return;
+                        }
                         context.startActivity(launchIntent);
-                        completeBootRestore(context.getApplicationContext());
                     } catch (Exception e) {
                         Log.e(TAG, "Delayed launch failed: " + e.getMessage(), e);
                     } finally {
