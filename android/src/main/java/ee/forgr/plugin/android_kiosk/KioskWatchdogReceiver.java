@@ -8,8 +8,10 @@ import android.util.Log;
 
 /**
  * Watchdog tick: best-effort {@link Context#startActivity} (skipped while the display is off via
- * {@link KioskRelaunchHelper}) then always re-arms the next alarm. OEMs may block the activity; the
- * schedule still advances.
+ * {@link KioskRelaunchHelper}). When the watchdog is still enabled in prefs, re-arms the next alarm
+ * via {@link KioskWatchdogScheduler#scheduleNext}; if the watchdog is disabled in prefs,
+ * {@link #onReceive} returns early and does not schedule. OEMs may block the activity; the schedule
+ * still advances when enabled.
  */
 public class KioskWatchdogReceiver extends BroadcastReceiver {
 

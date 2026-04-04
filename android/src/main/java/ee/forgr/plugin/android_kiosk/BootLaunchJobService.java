@@ -5,7 +5,6 @@ import android.app.job.JobService;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.util.Log;
 
 /**
@@ -29,10 +28,7 @@ public class BootLaunchJobService extends JobService {
                 jobFinished(params, false);
                 return false;
             }
-            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            }
+            KioskLaunchIntents.addWatchdogLaunchFlags(launchIntent);
             startActivity(launchIntent);
         } catch (Exception e) {
             Log.e(TAG, "Job launch failed: " + e.getMessage(), e);

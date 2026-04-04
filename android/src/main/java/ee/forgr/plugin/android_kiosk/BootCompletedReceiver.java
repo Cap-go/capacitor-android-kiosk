@@ -34,7 +34,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
             SharedPreferences prefs = context.getSharedPreferences(KioskPrefs.PREFS_NAME, Context.MODE_PRIVATE);
             boolean kioskWasActive = KioskPrefs.shouldRestoreAfterBoot(prefs);
             if (!kioskWasActive) {
-                KioskWatchdogScheduler.rescheduleIfEnabled(context);
+                // Do not re-arm watchdog here: restore-after-boot is off; app resume will reschedule if still enabled.
                 return;
             }
 
@@ -45,31 +45,31 @@ public class BootCompletedReceiver extends BroadcastReceiver {
                 return;
             }
 
-            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            }
+            KioskLaunchIntents.addWatchdogLaunchFlags(launchIntent);
 
-            // 1. Delayed launch (gives system time to settle)
+            // 1. AlarmManager second chance (60s later, works in Doze)
+            scheduleAlarmLaunch(context, launchIntent);
+
+            // 2. JobScheduler fallback (runs within 60s if boot broadcast was delayed)
+            scheduleJobLaunch(context);
+
+            // 3. Restore watchdog alarm (cleared at reboot) when kiosk restore is enabled
+            KioskWatchdogScheduler.rescheduleIfEnabled(context);
+
+            // 4. Delayed launch (gives system time to settle); goAsync keeps receiver alive until the post runs.
+            final BroadcastReceiver.PendingResult pendingResult = goAsync();
             new Handler(Looper.getMainLooper()).postDelayed(
                 () -> {
                     try {
                         context.startActivity(launchIntent);
                     } catch (Exception e) {
                         Log.e(TAG, "Delayed launch failed: " + e.getMessage(), e);
+                    } finally {
+                        pendingResult.finish();
                     }
                 },
                 DELAY_MS
             );
-
-            // 2. AlarmManager second chance (60s later, works in Doze)
-            scheduleAlarmLaunch(context, launchIntent);
-
-            // 3. JobScheduler fallback (runs within 60s if boot broadcast was delayed)
-            scheduleJobLaunch(context);
-
-            // 4. Restore watchdog alarm (cleared at reboot) when kiosk restore is enabled
-            KioskWatchdogScheduler.rescheduleIfEnabled(context);
         } catch (Exception e) {
             Log.e(TAG, "Error in boot receiver: " + e.getMessage(), e);
         }

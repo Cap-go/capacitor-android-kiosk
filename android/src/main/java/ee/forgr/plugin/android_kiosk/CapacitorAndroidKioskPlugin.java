@@ -24,6 +24,7 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
 
     private final String pluginVersion = "8.1.7";
     private boolean isInKioskMode = false;
+    private boolean skipNextPauseRecovery = false;
     private final Set<Integer> allowedKeys = new HashSet<>();
 
     @Override
@@ -56,9 +57,7 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
                 return;
             }
 
-            JSObject options = call.getData();
-            final boolean hasRestoreAfterRebootOption = options != null && options.has("restoreAfterReboot");
-            final boolean hasRelaunchOption = options != null && options.has("relaunch");
+            final boolean restoreAfterReboot = Boolean.TRUE.equals(call.getBoolean("restoreAfterReboot", false));
             final boolean relaunchEnabled = Boolean.TRUE.equals(call.getBoolean("relaunch", false));
             Integer intervalMinBoxed = call.getInt("relaunchIntervalMinutes", 15);
             final int relaunchIntervalMinutes = intervalMinBoxed != null ? intervalMinBoxed : 15;
@@ -66,47 +65,16 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
 
             activity.runOnUiThread(() -> {
                 try {
-                    View decorView = activity.getWindow().getDecorView();
-
-                    // Hide system UI for different Android versions
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        // Android 11+ (API 30+)
-                        activity.getWindow().setDecorFitsSystemWindows(false);
-                        android.view.WindowInsetsController controller = decorView.getWindowInsetsController();
-                        if (controller != null) {
-                            controller.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
-                            controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-                        }
-                    } else {
-                        // Android 10 and below
-                        int uiOptions =
-                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                            View.SYSTEM_UI_FLAG_FULLSCREEN |
-                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-                        decorView.setSystemUiVisibility(uiOptions);
-                    }
-
-                    // Keep screen on
-                    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-                    // Prevent status bar from being pulled down
-                    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                    applyKioskImmersiveMode(activity);
 
                     isInKioskMode = true;
-                    if (hasRestoreAfterRebootOption) {
-                        setPersistedRestoreAfterReboot(Boolean.TRUE.equals(call.getBoolean("restoreAfterReboot", false)));
-                    }
+                    setPersistedRestoreAfterReboot(restoreAfterReboot);
 
                     Context ctx = activity.getApplicationContext();
-                    if (hasRelaunchOption) {
-                        if (relaunchEnabled) {
-                            KioskWatchdogScheduler.enable(ctx, relaunchIntervalMs);
-                        } else {
-                            KioskWatchdogScheduler.disable(ctx);
-                        }
+                    if (relaunchEnabled) {
+                        KioskWatchdogScheduler.enable(ctx, relaunchIntervalMs);
+                    } else {
+                        KioskWatchdogScheduler.disable(ctx);
                     }
 
                     setKioskSessionActive(true);
@@ -193,6 +161,7 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
             }
 
             // Open home screen settings (must start from Activity so settings appear in foreground)
+            skipNextPauseRecovery = true;
             Intent intent = new Intent(android.provider.Settings.ACTION_HOME_SETTINGS);
             activity.startActivity(intent);
 
@@ -257,11 +226,25 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
         if (context != null) {
             KioskWatchdogScheduler.rescheduleIfEnabled(context);
         }
+        Activity activity = getActivity();
+        SharedPreferences prefs = getKioskPrefs();
+        if (activity != null && prefs != null && prefs.getBoolean(KioskPrefs.KEY_KIOSK_SESSION_ACTIVE, false)) {
+            activity.runOnUiThread(() -> {
+                applyKioskImmersiveMode(activity);
+                isInKioskMode = true;
+                setKioskSessionActive(true);
+                startKeepAliveService();
+            });
+        }
     }
 
     @Override
     protected void handleOnPause() {
         super.handleOnPause();
+        if (skipNextPauseRecovery) {
+            skipNextPauseRecovery = false;
+            return;
+        }
         if (isInKioskMode) {
             Activity activity = getActivity();
             if (activity != null) {
@@ -321,10 +304,47 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
      * Call this from your MainActivity's dispatchKeyEvent method
      */
     public boolean shouldBlockKey(int keyCode) {
-        if (!isInKioskMode) {
+        if (!isKioskBlockingKeys()) {
             return false;
         }
         return !allowedKeys.contains(keyCode);
+    }
+
+    /** True when kiosk UI should block keys: in-memory session or persisted session after process death. */
+    private boolean isKioskBlockingKeys() {
+        if (isInKioskMode) {
+            return true;
+        }
+        SharedPreferences prefs = getKioskPrefs();
+        return prefs != null && prefs.getBoolean(KioskPrefs.KEY_KIOSK_SESSION_ACTIVE, false);
+    }
+
+    private void applyKioskImmersiveMode(Activity activity) {
+        if (activity == null) {
+            return;
+        }
+        View decorView = activity.getWindow().getDecorView();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.getWindow().setDecorFitsSystemWindows(false);
+            android.view.WindowInsetsController controller = decorView.getWindowInsetsController();
+            if (controller != null) {
+                controller.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            int uiOptions =
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+            decorView.setSystemUiVisibility(uiOptions);
+        }
+
+        activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     }
 
     /**
