@@ -192,7 +192,9 @@ public class BootCompletedReceiver extends BroadcastReceiver {
     static void cancelBootLaunchJob(Context context) {
         if (context == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
         try {
-            android.app.job.JobScheduler scheduler = (android.app.job.JobScheduler) context.getApplicationContext().getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            android.app.job.JobScheduler scheduler = (android.app.job.JobScheduler) context
+                .getApplicationContext()
+                .getSystemService(Context.JOB_SCHEDULER_SERVICE);
             if (scheduler != null) {
                 scheduler.cancel(bootLaunchJobId(context));
             }

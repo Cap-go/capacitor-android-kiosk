@@ -412,8 +412,7 @@ public class CapacitorAndroidKioskPlugin extends Plugin {
         for (String s : stored) {
             try {
                 allowedKeys.add(Integer.parseInt(s.trim()));
-            } catch (NumberFormatException ignored) {
-            }
+            } catch (NumberFormatException ignored) {}
         }
     }
 
