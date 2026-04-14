@@ -22,7 +22,7 @@ import java.util.Set;
 @CapacitorPlugin(name = "CapacitorAndroidKiosk")
 public class CapacitorAndroidKioskPlugin extends Plugin {
 
-    private final String pluginVersion = "8.1.8";
+    private final String pluginVersion = "8.2.0";
     private boolean isInKioskMode = false;
     private boolean skipNextPauseRecovery = false;
     private final Set<Integer> allowedKeys = new HashSet<>();
