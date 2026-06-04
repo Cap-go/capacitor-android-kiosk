@@ -7,7 +7,7 @@ import Capacitor
  */
 @objc(CapacitorAndroidKioskPlugin)
 public class CapacitorAndroidKioskPlugin: CAPPlugin, CAPBridgedPlugin {
-    private let pluginVersion: String = "8.2.2"
+    private let pluginVersion: String = "8.2.3"
     public let identifier = "CapacitorAndroidKioskPlugin"
     public let jsName = "CapacitorAndroidKiosk"
     public let pluginMethods: [CAPPluginMethod] = [
