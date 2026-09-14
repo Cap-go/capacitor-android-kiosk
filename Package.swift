@@ -10,13 +10,14 @@ let package = Package(
             targets: ["CapacitorAndroidKioskPlugin"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "9.0.0-alpha.6")
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0")
     ],
     targets: [
         .target(
             name: "CapacitorAndroidKioskPlugin",
             dependencies: [
-                .product(name: "Capacitor", package: "capacitor-swift-pm")
+                .product(name: "Capacitor", package: "capacitor-swift-pm"),
+                .product(name: "Cordova", package: "capacitor-swift-pm")
             ],
             path: "ios/Sources/CapacitorAndroidKioskPlugin"),
         .testTarget(
