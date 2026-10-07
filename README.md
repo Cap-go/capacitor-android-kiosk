@@ -1,12 +1,27 @@
 # capacitor-android-kiosk
-<a href="https://capgo.app/"><img src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-android-kiosk" alt="Capgo - Instant updates for Capacitor" /></a>
+
+Lock an Android device into kiosk mode from your Capacitor app: hide system UI, block hardware buttons and run as the home launcher. Built for point of sale, signage and single-purpose devices.
+
+<a href="https://capgo.app/?ref=plugin_android_kiosk"><img src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-android-kiosk" alt="Capgo - Instant updates for Capacitor" /></a>
 
 <div align="center">
-  <h2><a href="https://capgo.app/?ref=plugin_android_kiosk"> ➡️ Get Instant updates for your App with Capgo</a></h2>
-  <h2><a href="https://capgo.app/consulting/?ref=plugin_android_kiosk"> Missing a feature? We'll build the plugin for you 💪</a></h2>
+  <p><b>Capgo</b>: open-source live updates for Ionic and Capacitor apps. Ship OTA fixes and features instantly, without waiting for app store review.</p>
+  <h2><a href="https://capgo.app/register/?ref=plugin_android_kiosk">➡️ Get started for free</a></h2>
+  <p>14-day unlimited free trial. No credit card required</p>
+  <p><a href="https://capgo.app/consulting/?ref=plugin_android_kiosk">Missing a feature? We'll build the plugin for you 💪</a></p>
 </div>
-Android Kiosk Mode plugin for Capacitor - Lock device into kiosk mode with launcher functionality
-Compatible with Capacitor 8/7
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Cap-go/capacitor-android-kiosk/main/assets/github-social-preview.png" alt="@capgo/capacitor-android-kiosk for Capacitor apps" width="300" />
+</p>
+
+## Key features
+
+- **Kiosk mode**: `enterKioskMode()` hides system UI and blocks hardware buttons, `exitKioskMode()` restores them.
+- **Launcher**: `setAsLauncher()` opens home screen settings so your app can become the launcher, `isSetAsLauncher()` checks it.
+- **Allowed keys**: `setAllowedKeys()` picks which hardware keys keep working in kiosk mode.
+- **State check**: `isInKioskMode()` reports whether kiosk mode is active.
+- **Platforms**: Android. Android only. iOS and web are not supported.
 
 ## Documentation
 
