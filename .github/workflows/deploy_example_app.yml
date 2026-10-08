@@ -51,18 +51,11 @@ jobs:
       - name: Build example app
         run: bun run example:build
 
-      - name: Capgo upload disabled notice
-        if: ${{ vars.CAPGO_EXAMPLE_UPLOAD_ENABLED != 'true' }}
-        run: |
-          echo "Skipping Capgo bundle upload because vars.CAPGO_EXAMPLE_UPLOAD_ENABLED is not set to true."
-          echo "Create the Capgo app and set the repository variable when you are ready to publish."
-
       - name: Deploy to Capgo
-        if: ${{ vars.CAPGO_EXAMPLE_UPLOAD_ENABLED == 'true' }}
         working-directory: example-app
         run: |
           bunx @capgo/cli@latest bundle upload app.capgo.android.kiosk \
-            --bundle "${{ steps.bundle_version.outputs.bundle }}" \
+            --bundle "$BUNDLE_VERSION" \
             --path dist \
             --channel production \
             --package-json package.json,../package.json \
@@ -72,4 +65,5 @@ jobs:
             --ignore-checksum-check \
             --apikey "$CAPGO_TOKEN"
         env:
+          BUNDLE_VERSION: ${{ steps.bundle_version.outputs.bundle }}
           CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
