@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="viewport-fit=cover, width=device-width, initial-scale=1.0"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <title>Android Kiosk Example</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">Capgo plugin example</p>
+        <h1>Android kiosk control panel</h1>
+        <p class="lead">
+          Exercise lock task mode, launcher settings, and allowed hardware keys on a physical Android device. iOS and
+          web builds show a not-supported state for preview only.
+        </p>
+        <div class="chip-row">
+          <span id="platform-chip" class="chip">Platform</span>
+          <span id="kiosk-chip" class="chip" data-state="unknown">Kiosk: …</span>
+          <span id="launcher-chip" class="chip" data-state="unknown">Launcher: …</span>
+        </div>
+      </header>
+
+      <section id="unsupported-panel" class="panel warning-panel hidden">
+        <p class="label">Not supported here</p>
+        <p id="unsupported-message" class="unsupported-text">
+          This plugin is Android-only. Run the native Android build to test kiosk APIs.
+        </p>
+      </section>
+
+      <section id="android-panel" class="panel">
+        <p class="label">Enter kiosk mode options</p>
+        <div class="option-grid">
+          <label class="toggle">
+            <input type="checkbox" id="opt-restore-reboot" />
+            <span>Restore after reboot</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="opt-relaunch" checked />
+            <span>Relaunch watchdog</span>
+          </label>
+          <label class="field">
+            <span>Relaunch interval (minutes)</span>
+            <input type="number" id="opt-relaunch-interval" min="5" max="60" value="15" />
+          </label>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="btn-enter-kiosk">Enter kiosk mode</button>
+          <button type="button" id="btn-set-launcher" class="ghost">Open launcher settings</button>
+          <button type="button" id="btn-refresh" class="ghost">Refresh status</button>
+          <button type="button" id="btn-version" class="ghost">Plugin version</button>
+        </div>
+      </section>
+
+      <section id="keys-panel" class="panel">
+        <p class="label">Allowed hardware keys (kiosk)</p>
+        <div class="key-grid" id="key-grid">
+          <label class="toggle"><input type="checkbox" data-key="volumeUp" /> Volume up</label>
+          <label class="toggle"><input type="checkbox" data-key="volumeDown" /> Volume down</label>
+          <label class="toggle"><input type="checkbox" data-key="back" /> Back</label>
+          <label class="toggle"><input type="checkbox" data-key="home" /> Home</label>
+          <label class="toggle"><input type="checkbox" data-key="recent" /> Recent</label>
+          <label class="toggle"><input type="checkbox" data-key="power" /> Power</label>
+          <label class="toggle"><input type="checkbox" data-key="camera" /> Camera</label>
+          <label class="toggle"><input type="checkbox" data-key="menu" /> Menu</label>
+        </div>
+        <div class="actions">
+          <button type="button" id="btn-apply-keys" class="ghost">Apply allowed keys</button>
+        </div>
+      </section>
+
+      <section class="panel log-panel">
+        <div class="log-header">
+          <p class="label">Result log</p>
+          <button type="button" id="btn-clear-log" class="ghost small">Clear</button>
+        </div>
+        <pre id="result-log" aria-live="polite">Ready.</pre>
+      </section>
+
+      <footer class="exit-bar">
+        <button type="button" id="btn-exit-kiosk" class="danger">Exit kiosk mode</button>
+        <p class="exit-hint">Always available so testers are not stuck in lock task mode.</p>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
