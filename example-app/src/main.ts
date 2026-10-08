@@ -18,6 +18,32 @@ const optRelaunch = document.getElementById('opt-relaunch') as HTMLInputElement;
 const optRelaunchInterval = document.getElementById('opt-relaunch-interval') as HTMLInputElement;
 
 const isAndroid = Capacitor.getPlatform() === 'android';
+let kioskActionBusy = false;
+
+const kioskActionButtons = (): HTMLButtonElement[] =>
+  Array.from(
+    document.querySelectorAll<HTMLButtonElement>(
+      '#btn-enter-kiosk, #btn-exit-kiosk, #btn-set-launcher, #btn-apply-keys, #btn-refresh, #btn-version',
+    ),
+  );
+
+const withKioskAction = async (action: () => Promise<void>): Promise<void> => {
+  if (kioskActionBusy) {
+    return;
+  }
+  kioskActionBusy = true;
+  kioskActionButtons().forEach((button) => {
+    button.disabled = true;
+  });
+  try {
+    await action();
+  } finally {
+    kioskActionBusy = false;
+    if (isAndroid) {
+      setAndroidUiEnabled(true);
+    }
+  }
+};
 
 const appendLog = (title: string, payload: unknown): void => {
   const stamp = new Date().toISOString().slice(11, 19);
@@ -97,62 +123,74 @@ const initPlatformUi = (): void => {
   setAndroidUiEnabled(true);
 };
 
-document.getElementById('btn-enter-kiosk')?.addEventListener('click', async () => {
-  const options = readEnterOptions();
-  try {
-    await CapacitorAndroidKiosk.enterKioskMode(options);
-    appendLog('enterKioskMode', { ok: true, options });
-    await refreshStatus();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    appendLog('enterKioskMode error', message);
-  }
+document.getElementById('btn-enter-kiosk')?.addEventListener('click', () => {
+  void withKioskAction(async () => {
+    const options = readEnterOptions();
+    try {
+      await CapacitorAndroidKiosk.enterKioskMode(options);
+      appendLog('enterKioskMode', { ok: true, options });
+      await refreshStatus();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendLog('enterKioskMode error', message);
+    }
+  });
 });
 
-document.getElementById('btn-exit-kiosk')?.addEventListener('click', async () => {
-  try {
-    await CapacitorAndroidKiosk.exitKioskMode();
-    appendLog('exitKioskMode', { ok: true });
-    await refreshStatus();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    appendLog('exitKioskMode error', message);
-  }
+document.getElementById('btn-exit-kiosk')?.addEventListener('click', () => {
+  void withKioskAction(async () => {
+    try {
+      await CapacitorAndroidKiosk.exitKioskMode();
+      appendLog('exitKioskMode', { ok: true });
+      await refreshStatus();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendLog('exitKioskMode error', message);
+    }
+  });
 });
 
-document.getElementById('btn-set-launcher')?.addEventListener('click', async () => {
-  try {
-    await CapacitorAndroidKiosk.setAsLauncher();
-    appendLog('setAsLauncher', { ok: true, note: 'System launcher picker opened when supported.' });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    appendLog('setAsLauncher error', message);
-  }
+document.getElementById('btn-set-launcher')?.addEventListener('click', () => {
+  void withKioskAction(async () => {
+    try {
+      await CapacitorAndroidKiosk.setAsLauncher();
+      appendLog('setAsLauncher', { ok: true, note: 'System launcher picker opened when supported.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendLog('setAsLauncher error', message);
+    }
+  });
 });
 
-document.getElementById('btn-apply-keys')?.addEventListener('click', async () => {
-  const options = readAllowedKeys();
-  try {
-    await CapacitorAndroidKiosk.setAllowedKeys(options);
-    appendLog('setAllowedKeys', options);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    appendLog('setAllowedKeys error', message);
-  }
+document.getElementById('btn-apply-keys')?.addEventListener('click', () => {
+  void withKioskAction(async () => {
+    const options = readAllowedKeys();
+    try {
+      await CapacitorAndroidKiosk.setAllowedKeys(options);
+      appendLog('setAllowedKeys', options);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendLog('setAllowedKeys error', message);
+    }
+  });
 });
 
 document.getElementById('btn-refresh')?.addEventListener('click', () => {
-  void refreshStatus();
+  void withKioskAction(async () => {
+    await refreshStatus();
+  });
 });
 
-document.getElementById('btn-version')?.addEventListener('click', async () => {
-  try {
-    const result = await CapacitorAndroidKiosk.getPluginVersion();
-    appendLog('getPluginVersion', result);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    appendLog('getPluginVersion error', message);
-  }
+document.getElementById('btn-version')?.addEventListener('click', () => {
+  void withKioskAction(async () => {
+    try {
+      const result = await CapacitorAndroidKiosk.getPluginVersion();
+      appendLog('getPluginVersion', result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendLog('getPluginVersion error', message);
+    }
+  });
 });
 
 document.getElementById('btn-clear-log')?.addEventListener('click', () => {
@@ -160,7 +198,9 @@ document.getElementById('btn-clear-log')?.addEventListener('click', () => {
 });
 
 initPlatformUi();
-void refreshStatus();
+if (isAndroid) {
+  void refreshStatus();
+}
 
 if (Capacitor.isNativePlatform()) {
   CapacitorUpdater.notifyAppReady().catch((error: unknown) => {

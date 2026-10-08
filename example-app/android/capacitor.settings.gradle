@@ -2,6 +2,9 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/.bun/@capacitor+android@8.5.3+9cf34ba37901b220/node_modules/@capacitor/android/capacitor')
 
+include ':capacitor-splash-screen'
+project(':capacitor-splash-screen').projectDir = new File('../node_modules/.bun/@capacitor+splash-screen@8.0.2+9cf34ba37901b220/node_modules/@capacitor/splash-screen/android')
+
 include ':capgo-capacitor-android-kiosk'
 project(':capgo-capacitor-android-kiosk').projectDir = new File('../node_modules/.bun/@capgo+capacitor-android-kiosk@file+..+759ce506b1ed1a42/node_modules/@capgo/capacitor-android-kiosk/android')
 
