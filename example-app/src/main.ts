@@ -23,12 +23,15 @@ let kioskActionBusy = false;
 const kioskActionButtons = (): HTMLButtonElement[] =>
   Array.from(
     document.querySelectorAll<HTMLButtonElement>(
-      '#btn-enter-kiosk, #btn-exit-kiosk, #btn-set-launcher, #btn-apply-keys, #btn-refresh, #btn-version',
+      '#btn-enter-kiosk, #btn-set-launcher, #btn-apply-keys, #btn-refresh, #btn-version',
     ),
   );
 
-const withKioskAction = async (action: () => Promise<void>): Promise<void> => {
-  if (kioskActionBusy) {
+const withKioskAction = async (
+  action: () => Promise<void>,
+  options?: { allowDuringBusy?: boolean },
+): Promise<void> => {
+  if (kioskActionBusy && !options?.allowDuringBusy) {
     return;
   }
   kioskActionBusy = true;
@@ -138,7 +141,8 @@ document.getElementById('btn-enter-kiosk')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-exit-kiosk')?.addEventListener('click', () => {
-  void withKioskAction(async () => {
+  void withKioskAction(
+    async () => {
     try {
       await CapacitorAndroidKiosk.exitKioskMode();
       appendLog('exitKioskMode', { ok: true });
@@ -147,7 +151,9 @@ document.getElementById('btn-exit-kiosk')?.addEventListener('click', () => {
       const message = error instanceof Error ? error.message : String(error);
       appendLog('exitKioskMode error', message);
     }
-  });
+  },
+    { allowDuringBusy: true },
+  );
 });
 
 document.getElementById('btn-set-launcher')?.addEventListener('click', () => {
